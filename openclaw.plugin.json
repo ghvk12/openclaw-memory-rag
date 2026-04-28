@@ -44,9 +44,21 @@
       "label": "Cross-Encoder Reranker",
       "help": "Adds ~150ms but materially improves precision."
     },
+    "reranker.endpoint": {
+      "label": "Reranker Backend",
+      "help": "ollama: legacy /api/embeddings (rarely produces real cross-encoder scores). tei: TEI-compatible /rerank (HF text-embeddings-inference, or the bundled tools/reranker-sidecar/ for Apple Silicon). Strongly prefer tei.",
+      "advanced": true
+    },
+    "reranker.url": {
+      "label": "Reranker URL",
+      "placeholder": "http://localhost:11434",
+      "help": "For endpoint=ollama use Ollama's URL. For endpoint=tei use the TEI/sidecar URL (default sidecar port: 8089).",
+      "advanced": true
+    },
     "reranker.model": {
       "label": "Reranker Model",
       "placeholder": "bge-reranker-v2-m3",
+      "help": "For endpoint=tei use a HuggingFace model id (e.g. BAAI/bge-reranker-v2-m3).",
       "advanced": true
     },
     "retrieval.topK": {
@@ -110,17 +122,18 @@
         },
         "required": ["url", "model", "dim"]
       },
-      "reranker": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "enabled": { "type": "boolean", "default": true },
-          "url": { "type": "string", "default": "http://localhost:11434" },
-          "model": { "type": "string", "default": "bge-reranker-v2-m3" },
-          "topNIn": { "type": "number", "default": 30, "minimum": 1, "maximum": 200 },
-          "topNOut": { "type": "number", "default": 10, "minimum": 1, "maximum": 50 }
-        }
-      },
+        "reranker": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "endpoint": { "type": "string", "enum": ["ollama", "tei"], "default": "ollama" },
+            "url": { "type": "string", "default": "http://localhost:11434" },
+            "model": { "type": "string", "default": "bge-reranker-v2-m3" },
+            "topNIn": { "type": "number", "default": 30, "minimum": 1, "maximum": 200 },
+            "topNOut": { "type": "number", "default": 10, "minimum": 1, "maximum": 50 }
+          }
+        },
       "retrieval": {
         "type": "object",
         "additionalProperties": false,

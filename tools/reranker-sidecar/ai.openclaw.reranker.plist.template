@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>ai.openclaw.reranker</string>
+
+    <key>Comment</key>
+    <string>OpenClaw memory-rag reranker sidecar (BAAI/bge-reranker-v2-m3 via sentence-transformers)</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>WorkingDirectory</key>
+    <string>__SIDECAR_DIR__</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>__SIDECAR_DIR__/venv/bin/uvicorn</string>
+      <string>app:app</string>
+      <string>--host</string>
+      <string>127.0.0.1</string>
+      <string>--port</string>
+      <string>8089</string>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>__USER_HOME__/.openclaw/logs/reranker.log</string>
+    <key>StandardErrorPath</key>
+    <string>__USER_HOME__/.openclaw/logs/reranker.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>__USER_HOME__</string>
+      <key>PATH</key>
+      <string>__SIDECAR_DIR__/venv/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+      <key>PYTHONUNBUFFERED</key>
+      <string>1</string>
+    </dict>
+  </dict>
+</plist>

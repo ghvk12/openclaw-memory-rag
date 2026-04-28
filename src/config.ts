@@ -14,6 +14,19 @@ export const EmbeddingsConfigSchema = Type.Object({
 
 export const RerankerConfigSchema = Type.Object({
   enabled: Type.Boolean({ default: true }),
+  /**
+   * Reranker backend.
+   *   - "ollama": calls Ollama's /api/embeddings with `<query>\t<doc>`. Works
+   *     with embedding models but cannot do true cross-encoder reranking
+   *     (architectural mismatch). Kept as the default for back-compat with
+   *     pre-existing configs; produces a warning and falls back to hybrid
+   *     scores when the model can't return per-pair scalars.
+   *   - "tei": calls a TEI-compatible POST /rerank endpoint. Supports the
+   *     real bge-reranker-v2-m3 cross-encoder via either HuggingFace's TEI
+   *     (amd64 only) or the bundled tools/reranker-sidecar/ Python service
+   *     (recommended on Apple Silicon).
+   */
+  endpoint: Type.Union([Type.Literal("ollama"), Type.Literal("tei")], { default: "ollama" }),
   url: Type.String({ default: "http://localhost:11434" }),
   model: Type.String({ default: "bge-reranker-v2-m3" }),
   topNIn: Type.Number({ default: 30, minimum: 1, maximum: 200 }),
@@ -96,7 +109,7 @@ export type ResolvedConfig = {
 const DEFAULTS: ResolvedConfig = {
   qdrant: { url: "http://localhost:6333", collection: "wa_memory_v1_mxbai_1024" },
   embeddings: { url: "http://localhost:11434", model: "mxbai-embed-large", dim: 1024 },
-  reranker: { enabled: true, url: "http://localhost:11434", model: "bge-reranker-v2-m3", topNIn: 30, topNOut: 10 },
+  reranker: { enabled: true, endpoint: "ollama", url: "http://localhost:11434", model: "bge-reranker-v2-m3", topNIn: 30, topNOut: 10 },
   retrieval: { topK: 10, parentWindow: 2, hybridFusion: "rrf", tokenBudget: 4000, minScore: 0.0, recencyHalfLifeDays: 30 },
   storage: { wal: "~/.openclaw/memory-rag/wal", fallbackMd: "~/.openclaw/memory-rag/MEMORY.md" },
   isolation: "global_owner",

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { Logger } from "./logger.js";
 import type { ResolvedConfig } from "./config.js";
 import { createOllamaEmbedClient, type OllamaEmbedClient } from "./ollama-embeddings.js";
-import { createOllamaReranker, type Reranker } from "./reranker.js";
+import { createReranker, type Reranker } from "./reranker.js";
 import {
   QdrantBackend,
   type HybridSearchHit,
@@ -67,7 +67,7 @@ export class MemoryEngine {
     this.logger = logger;
     this.embed = createOllamaEmbedClient(cfg.embeddings, logger);
     this.qdrant = new QdrantBackend(cfg.qdrant, cfg.embeddings.dim, logger);
-    this.reranker = createOllamaReranker(cfg.reranker, logger);
+    this.reranker = createReranker(cfg.reranker, logger);
     this.wal = new Wal(cfg.storage.wal, logger);
   }
 

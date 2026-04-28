@@ -2,7 +2,7 @@
 
 Hybrid (dense + BM42 sparse) Retrieval-Augmented Generation memory plugin for [OpenClaw](https://github.com/openclaw/openclaw).
 
-Backed by **Qdrant** for vector + sparse storage, **Ollama** for local embeddings (`mxbai-embed-large`) and a **cross-encoder reranker** (`bge-reranker-v2-m3`), with sentence-window parent expansion, token-budget trimming, WhatsApp metadata enrichment, and durable JSONL WAL.
+Backed by **Qdrant** for vector + sparse storage, **Ollama** for local embeddings (`mxbai-embed-large`), and a **TEI-compatible cross-encoder reranker** (`BAAI/bge-reranker-v2-m3` via either HuggingFace TEI or the bundled `tools/reranker-sidecar/`), with sentence-window parent expansion, token-budget trimming, WhatsApp metadata enrichment, and durable JSONL WAL.
 
 ## Why
 
@@ -15,15 +15,17 @@ It does **not** replace the built-in memory; it augments it via the plugin SDK's
 - OpenClaw >= 2026.4.20
 - Node 22.14+ (24 recommended)
 - Docker (for Qdrant)
-- Ollama (native or Docker) with two models pulled:
+- Ollama (native or Docker) with the embedding model pulled:
   ```bash
   ollama pull mxbai-embed-large
-  ollama pull bge-reranker-v2-m3
   ```
 - Qdrant running on `:6333`. From this repo root one level up:
   ```bash
   cd .. && docker compose up -d qdrant
   ```
+- **(Optional but recommended)** A cross-encoder reranker. The plugin supports two backends:
+  - **`endpoint: "tei"`** — a [TEI](https://github.com/huggingface/text-embeddings-inference)-compatible `/rerank` server. On amd64 hosts, the official HuggingFace `text-embeddings-inference` Docker image works directly. On Apple Silicon, TEI's amd64 image crashes under Rosetta (Intel MKL incompatibility), so use the bundled `tools/reranker-sidecar/` (a tiny FastAPI service that runs `BAAI/bge-reranker-v2-m3` natively via `sentence-transformers` with MPS acceleration). See [tools/reranker-sidecar/README.md](tools/reranker-sidecar/README.md).
+  - **`endpoint: "ollama"`** (legacy default) — calls Ollama's `/api/embeddings`. Most community GGUF ports of cross-encoder rerankers don't actually return real reranking scores through this endpoint; the plugin gracefully falls back to hybrid scores when this happens. Kept for back-compat only — strongly prefer `endpoint: "tei"`.
 
 ## Install
 
@@ -51,7 +53,14 @@ Then add to `~/.openclaw/openclaw.json`:
         config: {
           qdrant: { url: "http://localhost:6333", collection: "wa_memory_v1_mxbai_1024" },
           embeddings: { url: "http://localhost:11434", model: "mxbai-embed-large", dim: 1024 },
-          reranker: { enabled: true, model: "bge-reranker-v2-m3" },
+          // For real cross-encoder reranking, run the bundled sidecar
+          // (tools/reranker-sidecar/) or HuggingFace TEI on port 8089:
+          reranker: {
+            enabled: true,
+            endpoint: "tei",                    // "ollama" | "tei"
+            url: "http://localhost:8089",       // sidecar/TEI port
+            model: "BAAI/bge-reranker-v2-m3"    // HF model id under TEI
+          },
           retrieval: { topK: 10, parentWindow: 2, tokenBudget: 4000 },
           isolation: "global_owner",
           // Phone numbers without @s.whatsapp.net. Replace with your own.
