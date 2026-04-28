@@ -1,6 +1,7 @@
 import type { Logger } from "./logger.js";
 import type { RetrievalConfig } from "./config.js";
 import type { HybridSearchHit, MemoryPayload, QdrantBackend } from "./qdrant-client.js";
+import { looksLikePromptInjection } from "./prompt-injection.js";
 
 /**
  * Approximate token count from char count. Cheap and good-enough for budgeting
@@ -122,13 +123,6 @@ function blockTokenCost(block: ParentBlock): number {
   return cost;
 }
 
-const PROMPT_INJECTION_PATTERNS: RegExp[] = [
-  /ignore (all|any|previous|above|prior) instructions/i,
-  /do not follow (the )?(system|developer)/i,
-  /system prompt/i,
-  /<\s*(system|assistant|developer|tool|function)\b/i,
-];
-
 const ESCAPE_MAP: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -137,14 +131,24 @@ const ESCAPE_MAP: Record<string, string> = {
   "'": "&#39;",
 };
 
+/**
+ * Defense-in-depth render-time sanitizer. Two-stage:
+ *   1. Check the RAW text for prompt-injection patterns BEFORE escaping. If
+ *      anything matches, return a suppression marker (the LLM never sees the
+ *      attack at all). Checking pre-escape is critical because raw `<system>`
+ *      and `&lt;system&gt;` are both treated as injection attempts.
+ *   2. Otherwise, HTML-escape `& < > " '` so legitimate text containing those
+ *      characters is rendered inertly.
+ *
+ * Capture-time `MemoryEngine.shouldCapture()` is the primary defense; this
+ * function is the safety net for legacy/replayed payloads that pre-date the
+ * stronger capture-time filter.
+ */
 function sanitize(text: string): string {
-  const escaped = text.replace(/[&<>"']/g, (ch) => ESCAPE_MAP[ch] ?? ch);
-  for (const re of PROMPT_INJECTION_PATTERNS) {
-    if (re.test(escaped)) {
-      return `[content suppressed by prompt-injection filter]`;
-    }
+  if (looksLikePromptInjection(text)) {
+    return `[content suppressed by prompt-injection filter]`;
   }
-  return escaped;
+  return text.replace(/[&<>"']/g, (ch) => ESCAPE_MAP[ch] ?? ch);
 }
 
 /**

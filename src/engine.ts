@@ -16,6 +16,7 @@ import { hybridRetrieve, type RetrieveContext } from "./hybrid-retrieve.js";
 import { expandAndBudget, renderContext, type ParentBlock } from "./parent-expansion.js";
 import { buildSparseVector } from "./sparse-tokenizer.js";
 import { ensureDir, expandHome } from "./paths.js";
+import { looksLikePromptInjection } from "./prompt-injection.js";
 
 export type StoreParams = {
   text: string;
@@ -41,12 +42,6 @@ export type RecallResult = {
   rawHitCount: number;
   rerankedCount: number;
 };
-
-const PROMPT_INJECTION_RE_LIST = [
-  /ignore (all|any|previous|above|prior) instructions/i,
-  /do not follow (the )?(system|developer)/i,
-  /<\s*(system|assistant|developer|tool|function|relevant-memories)\b/i,
-];
 
 const REACTION_LIKE_RE = /^[\s\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Emoji}\u200D]{0,8}$/u;
 
@@ -98,10 +93,7 @@ export class MemoryEngine {
     if (tokens < this.cfg.filters.minTokens) return false;
     if (text.length > MAX_TEXT_LEN_FOR_INDEX) return false;
     if (this.cfg.filters.skipReactions && REACTION_LIKE_RE.test(text.trim())) return false;
-    if (text.includes("<relevant-memories>")) return false;
-    for (const re of PROMPT_INJECTION_RE_LIST) {
-      if (re.test(text)) return false;
-    }
+    if (looksLikePromptInjection(text)) return false;
     return true;
   }
 

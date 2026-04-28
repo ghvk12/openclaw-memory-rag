@@ -1,7 +1,15 @@
 # Pinned for reproducibility on Python 3.13, Apple Silicon arm64.
 # torch >=2.6 is required for Python 3.13 wheels.
 # Bump in concert and re-test the smoke check in app.py before committing.
-fastapi>=0.115.6,<0.116
+#
+# Security pins (defense-in-depth — none of these CVEs affect our endpoints
+# but pin to keep the audit clean):
+#   - starlette >=0.49.1 patches CVE-2025-54121 (large-multipart DoS) and
+#     CVE-2025-62727 (FileResponse Range-header DoS). We accept neither
+#     multipart uploads nor serve files, so neither is exploitable in our
+#     surface, but we patch anyway.
+fastapi>=0.118,<0.140
+starlette>=0.49.1,<1
 uvicorn[standard]>=0.34.0,<0.36
 pydantic>=2.10,<3
 sentence-transformers>=3.3.1,<5

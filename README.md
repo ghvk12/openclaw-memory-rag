@@ -19,13 +19,53 @@ It does **not** replace the built-in memory; it augments it via the plugin SDK's
   ```bash
   ollama pull mxbai-embed-large
   ```
-- Qdrant running on `:6333`. From this repo root one level up:
-  ```bash
-  cd .. && docker compose up -d qdrant
-  ```
+- Qdrant on `:6333` — see [First-time setup](#first-time-setup) below for the recommended `docker run` (loopback bind + api-key auth).
 - **(Optional but recommended)** A cross-encoder reranker. The plugin supports two backends:
   - **`endpoint: "tei"`** — a [TEI](https://github.com/huggingface/text-embeddings-inference)-compatible `/rerank` server. On amd64 hosts, the official HuggingFace `text-embeddings-inference` Docker image works directly. On Apple Silicon, TEI's amd64 image crashes under Rosetta (Intel MKL incompatibility), so use the bundled `tools/reranker-sidecar/` (a tiny FastAPI service that runs `BAAI/bge-reranker-v2-m3` natively via `sentence-transformers` with MPS acceleration). See [tools/reranker-sidecar/README.md](tools/reranker-sidecar/README.md).
   - **`endpoint: "ollama"`** (legacy default) — calls Ollama's `/api/embeddings`. Most community GGUF ports of cross-encoder rerankers don't actually return real reranking scores through this endpoint; the plugin gracefully falls back to hybrid scores when this happens. Kept for back-compat only — strongly prefer `endpoint: "tei"`.
+
+## First-time setup
+
+The plugin needs a Qdrant instance with the right security posture (loopback bind, api-key auth, persistent volume). The bundled helper sets it up in one command:
+
+```bash
+./tools/install/setup-qdrant.sh
+```
+
+This will:
+
+1. Generate a fresh 32-byte api-key (or honor `QDRANT_API_KEY=<value>` if you set one).
+2. Start `qdrant/qdrant:v1.12.4` bound to **`127.0.0.1:6333`/`6334` only** (not exposed to your LAN).
+3. Mount `~/openclaw-data/qdrant/` for persistent storage (override with `QDRANT_DATA_DIR`).
+4. Print the api-key plus the exact `qdrant: { … }` block to paste into `~/.openclaw/openclaw.json`.
+
+**Save the api-key in your password manager immediately** — it is the only credential gating access to your Qdrant collection, and the script does **not** persist it anywhere except the running container's env (visible only via `docker inspect`). You'll need it again if you ever recreate the container.
+
+The script is **idempotent** — it refuses to clobber an existing container of the same name. To recreate:
+
+```bash
+docker stop openclaw-qdrant && docker rm openclaw-qdrant
+QDRANT_API_KEY=<your-saved-key> ./tools/install/setup-qdrant.sh
+```
+
+Other env overrides: `CONTAINER_NAME`, `QDRANT_VERSION`, `QDRANT_PORT`, `QDRANT_GRPC_PORT`, and `QDRANT_API_KEY=disabled` (loopback bind only, no auth — discouraged but supported for quick local experiments).
+
+If you'd rather run it by hand, the equivalent docker command is:
+
+```bash
+APIKEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+docker run -d \
+  --name openclaw-qdrant \
+  --restart unless-stopped \
+  -p 127.0.0.1:6333:6333 \
+  -p 127.0.0.1:6334:6334 \
+  -v ~/openclaw-data/qdrant:/qdrant/storage \
+  -e QDRANT__SERVICE__API_KEY="$APIKEY" \
+  qdrant/qdrant:v1.12.4
+echo "Save this in your password manager: $APIKEY"
+```
+
+Each developer who installs this plugin should run their own setup and generate their own key — the api-key is per-installation, not a shared secret. Never commit it, never share it.
 
 ## Install
 
@@ -42,7 +82,7 @@ openclaw plugins install .
 openclaw plugins enable memory-rag
 ```
 
-Then add to `~/.openclaw/openclaw.json`:
+Then add to `~/.openclaw/openclaw.json` (file mode `600` — owner-only):
 
 ```json5
 {
@@ -51,7 +91,13 @@ Then add to `~/.openclaw/openclaw.json`:
       "memory-rag": {
         enabled: true,
         config: {
-          qdrant: { url: "http://localhost:6333", collection: "wa_memory_v1_mxbai_1024" },
+          qdrant: {
+            url: "http://localhost:6333",
+            collection: "wa_memory_v1_mxbai_1024",
+            // Match the api-key printed by tools/install/setup-qdrant.sh.
+            // Optional: omit if you ran the script with QDRANT_API_KEY=disabled.
+            apiKey: "<YOUR_QDRANT_API_KEY>"
+          },
           embeddings: { url: "http://localhost:11434", model: "mxbai-embed-large", dim: 1024 },
           // For real cross-encoder reranking, run the bundled sidecar
           // (tools/reranker-sidecar/) or HuggingFace TEI on port 8089:
