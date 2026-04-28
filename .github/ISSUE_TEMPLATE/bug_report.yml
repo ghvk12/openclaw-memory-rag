@@ -1,0 +1,110 @@
+name: Bug report
+description: Something isn't working — capture, recall, the sidecar, the CLI, etc.
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report. Please fill out as much as you can — repro
+        steps and logs are the difference between a same-day fix and a week of
+        back-and-forth.
+
+        **Don't file security vulnerabilities here** — use the private channel
+        described in `SECURITY.md` (the "Report a vulnerability" button on the
+        Security tab).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, concise description of the bug.
+      placeholder: e.g., memrag recall returns no hits even though autoCapture has been on for a week
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that someone else can follow on a fresh machine.
+      placeholder: |
+        1. Run `./tools/install/setup-qdrant.sh`
+        2. Add the snippet to `~/.openclaw/openclaw.json`
+        3. Run `openclaw memrag status`
+        4. Observe `qdrant=fail` in the output
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: `qdrant=ok(<count>)` should appear within 5 seconds.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      placeholder: Stuck on `qdrant=fail` indefinitely. No errors visible in the gateway log.
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: openclaw-memory-rag version
+      description: Get this from `package.json` or `openclaw plugins list`.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: openclaw-version
+    attributes:
+      label: OpenClaw gateway version
+      placeholder: 2026.4.24
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (x86_64)
+        - Linux (arm64)
+        - Windows (WSL2)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: Output of `node --version`.
+      placeholder: v24.14.0
+    validations:
+      required: true
+
+  - type: input
+    id: qdrant-version
+    attributes:
+      label: Qdrant version
+      description: Output of `docker exec openclaw-qdrant cat /qdrant/Cargo.toml | grep version | head -1`, or just the image tag you're running.
+      placeholder: v1.12.4
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Paste the relevant section of `~/.openclaw/logs/gateway.log` and (if applicable) `~/.openclaw/logs/reranker.log`.
+        **Redact api-keys, JIDs, phone numbers, and other personal info before pasting.** Lines like
+        `memory-rag: ready — qdrant=ok(1377) embed=ok rerank=ok` are exactly what we want.
+      render: text

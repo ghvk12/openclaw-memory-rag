@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / how-to / discussion
+    url: https://github.com/ghvk12/openclaw-memory-rag/discussions
+    about: |
+      Not sure if it's a bug or how the plugin is supposed to work? Open a Discussion
+      so other users can chime in. Q&A doesn't belong in the issue tracker.
+
+  - name: Security vulnerability (PRIVATE — don't open a public issue)
+    url: https://github.com/ghvk12/openclaw-memory-rag/security/advisories/new
+    about: |
+      Use GitHub's private vulnerability reporting via the Security tab. This goes
+      to the maintainer in a private channel and is the only correct place to
+      disclose security findings. See SECURITY.md for the full policy.

@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a new capability or a behavior change.
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about how the plugin works rather than a feature idea?
+        → Use [Discussions](https://github.com/ghvk12/openclaw-memory-rag/discussions) instead. Issues are for actionable changes.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the user-visible pain. Skip the proposed solution for now.
+      placeholder: |
+        e.g., I want memory-rag to also index voice-note transcripts from WhatsApp,
+        not just text. Right now they're filtered out by `skipReactions` and the
+        minTokens floor, so important content from voice messages is lost.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: How you'd like it to work. Skip if you're not sure — describing the problem clearly is enough.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered (optional)
+      description: Workarounds you tried, configs you tweaked, other tools you looked at.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      description: Screenshots, links, related issues, etc.
