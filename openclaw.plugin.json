@@ -1,0 +1,179 @@
+{
+  "id": "memory-rag",
+  "name": "Memory RAG",
+  "description": "Hybrid (dense + BM42 sparse) RAG memory supplement for OpenClaw, backed by Qdrant + Ollama with cross-encoder reranking and parent-window expansion.",
+  "version": "0.1.0",
+  "kind": "memory",
+  "activation": {
+    "onStartup": true
+  },
+  "uiHints": {
+    "qdrant.url": {
+      "label": "Qdrant URL",
+      "placeholder": "http://localhost:6333",
+      "help": "REST endpoint of the Qdrant instance."
+    },
+    "qdrant.collection": {
+      "label": "Qdrant Collection",
+      "placeholder": "wa_memory_v1_mxbai_1024",
+      "help": "Versioned collection name. Bump the suffix when changing embedding model/dim."
+    },
+    "qdrant.apiKey": {
+      "label": "Qdrant API Key",
+      "sensitive": true,
+      "advanced": true,
+      "help": "Optional. Use ${QDRANT_API_KEY} for env-resolved secrets."
+    },
+    "embeddings.url": {
+      "label": "Ollama URL",
+      "placeholder": "http://localhost:11434",
+      "help": "Ollama daemon endpoint."
+    },
+    "embeddings.model": {
+      "label": "Embedding Model",
+      "placeholder": "mxbai-embed-large",
+      "help": "Must be pulled in Ollama: `ollama pull mxbai-embed-large`."
+    },
+    "embeddings.dim": {
+      "label": "Vector Dimension",
+      "placeholder": "1024",
+      "advanced": true,
+      "help": "Output dimensionality of the embedding model. mxbai-embed-large = 1024."
+    },
+    "reranker.enabled": {
+      "label": "Cross-Encoder Reranker",
+      "help": "Adds ~150ms but materially improves precision."
+    },
+    "reranker.model": {
+      "label": "Reranker Model",
+      "placeholder": "bge-reranker-v2-m3",
+      "advanced": true
+    },
+    "retrieval.topK": {
+      "label": "Top-K Results",
+      "placeholder": "10",
+      "help": "Final number of hits handed to the LLM after reranking."
+    },
+    "retrieval.parentWindow": {
+      "label": "Parent Window (\u00b1messages)",
+      "placeholder": "2",
+      "help": "Sentence-window expansion around each hit. ~2 means 5 messages total per hit."
+    },
+    "retrieval.tokenBudget": {
+      "label": "Context Token Budget",
+      "placeholder": "4000",
+      "help": "Cap on total tokens of memory context injected into the prompt."
+    },
+    "isolation": {
+      "label": "Isolation Mode",
+      "help": "global_owner: owner JIDs searchable across all chats; group memory stays in group."
+    },
+    "ownerJids": {
+      "label": "Owner JIDs",
+      "help": "Phone numbers (without @s.whatsapp.net) considered \"the owner\" for cross-chat search."
+    },
+    "filters.autoCapture": {
+      "label": "Auto-Capture",
+      "help": "Automatically index every (user, assistant) exchange after each agent run."
+    },
+    "filters.autoRecall": {
+      "label": "Auto-Recall",
+      "help": "Automatically inject relevant memories into the prompt before the LLM call."
+    },
+    "channels.whitelist": {
+      "label": "Channel Whitelist",
+      "advanced": true,
+      "help": "Capture only from these channels. null/empty = all channels."
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "qdrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "default": "http://localhost:6333" },
+          "collection": { "type": "string", "default": "wa_memory_v1_mxbai_1024" },
+          "apiKey": { "type": "string" }
+        },
+        "required": ["url", "collection"]
+      },
+      "embeddings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "default": "http://localhost:11434" },
+          "model": { "type": "string", "default": "mxbai-embed-large" },
+          "dim": { "type": "number", "default": 1024, "minimum": 1, "maximum": 8192 }
+        },
+        "required": ["url", "model", "dim"]
+      },
+      "reranker": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "url": { "type": "string", "default": "http://localhost:11434" },
+          "model": { "type": "string", "default": "bge-reranker-v2-m3" },
+          "topNIn": { "type": "number", "default": 30, "minimum": 1, "maximum": 200 },
+          "topNOut": { "type": "number", "default": 10, "minimum": 1, "maximum": 50 }
+        }
+      },
+      "retrieval": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "topK": { "type": "number", "default": 10, "minimum": 1, "maximum": 100 },
+          "parentWindow": { "type": "number", "default": 2, "minimum": 0, "maximum": 10 },
+          "hybridFusion": { "type": "string", "enum": ["rrf", "dense_only", "sparse_only"], "default": "rrf" },
+          "tokenBudget": { "type": "number", "default": 4000, "minimum": 200, "maximum": 32000 },
+          "minScore": { "type": "number", "default": 0.0, "minimum": 0.0, "maximum": 1.0 },
+          "recencyHalfLifeDays": { "type": "number", "default": 30, "minimum": 0 }
+        }
+      },
+      "storage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "wal": { "type": "string", "default": "~/.openclaw/memory-rag/wal" },
+          "fallbackMd": { "type": "string", "default": "~/.openclaw/memory-rag/MEMORY.md" }
+        }
+      },
+      "isolation": {
+        "type": "string",
+        "enum": ["per_chat", "per_user", "global_owner", "global_all"],
+        "default": "global_owner"
+      },
+      "ownerJids": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": []
+      },
+      "filters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "minTokens": { "type": "number", "default": 3, "minimum": 0 },
+          "skipReactions": { "type": "boolean", "default": true },
+          "skipSystemMessages": { "type": "boolean", "default": true },
+          "autoCapture": { "type": "boolean", "default": false },
+          "autoRecall": { "type": "boolean", "default": true }
+        }
+      },
+      "channels": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "whitelist": {
+            "type": ["array", "null"],
+            "items": { "type": "string" },
+            "default": null
+          }
+        }
+      }
+    },
+    "required": ["qdrant", "embeddings"]
+  }
+}

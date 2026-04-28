@@ -1,0 +1,79 @@
+{
+  "name": "openclaw-memory-rag",
+  "version": "0.1.0",
+  "description": "Hybrid (dense + BM42 sparse) RAG memory plugin for OpenClaw, backed by Qdrant + Ollama with cross-encoder reranking, parent-window expansion, and WhatsApp metadata enrichment.",
+  "license": "MIT",
+  "author": "ghvk12",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ghvk12/openclaw-memory-rag.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ghvk12/openclaw-memory-rag/issues"
+  },
+  "homepage": "https://github.com/ghvk12/openclaw-memory-rag#readme",
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "memory",
+    "rag",
+    "qdrant",
+    "ollama",
+    "whatsapp",
+    "vector-search",
+    "hybrid-retrieval"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist/",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "doctor": "node ./dist/cli.js doctor",
+    "plugin:check": "plugin-inspector inspect --no-openclaw",
+    "plugin:ci": "plugin-inspector ci --no-openclaw --runtime --mock-sdk --allow-execute"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "runtimeExtensions": [
+      "./dist/index.js"
+    ],
+    "install": {
+      "defaultChoice": "directory",
+      "minHostVersion": ">=2026.4.20"
+    },
+    "compat": {
+      "pluginApi": ">=2026.4.20"
+    },
+    "build": {
+      "openclawVersion": "2026.4.25",
+      "pluginSdkVersion": "2026.4.25"
+    }
+  },
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.12.0",
+    "typebox": "1.1.31"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.4.20"
+  },
+  "devDependencies": {
+    "@openclaw/plugin-inspector": "^0.3.2",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  }
+}

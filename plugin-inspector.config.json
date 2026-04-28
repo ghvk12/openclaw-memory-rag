@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "plugin": {
+    "id": "memory-rag",
+    "priority": "high",
+    "seams": [
+      "plugin-runtime"
+    ]
+  },
+  "capture": {
+    "mockSdk": true
+  }
+}
