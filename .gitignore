@@ -17,3 +17,4 @@ reports/
 
 # Local scratch / verification artifacts
 .tmp-verify/
+.vendor/
