@@ -4,6 +4,9 @@
   "description": "Hybrid (dense + BM42 sparse) RAG memory supplement for OpenClaw, backed by Qdrant + Ollama with cross-encoder reranking and parent-window expansion.",
   "version": "0.1.0",
   "kind": "memory",
+  "contracts": {
+    "tools": ["memory_recall_rag", "memory_store_rag"]
+  },
   "activation": {
     "onStartup": true
   },
